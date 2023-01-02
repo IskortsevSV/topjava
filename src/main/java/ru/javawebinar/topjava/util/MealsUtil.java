@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static ru.javawebinar.topjava.util.TimeUtil.isBetweenHalfOpen;
 
@@ -27,10 +28,10 @@ public class MealsUtil {
                 new Meal(LocalDateTime.of(2020, Month.JANUARY, 31, 20, 0), "Ужин", 410)
         );
 
-        List<MealTo> mealsTo = filteredByCycles(meals, LocalTime.of(7, 0), LocalTime.of(13, 0), 2000);
-        mealsTo.forEach(System.out::println);
+        filteredByCycles(meals, LocalTime.of(7, 0), LocalTime.of(13, 0), 2000)
+                .forEach(System.out::println);
 
-        //     System.out.println(filteredByStreams(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000));
+        System.out.println(filteredByStreams(meals, LocalTime.of(7, 0), LocalTime.of(13, 0), 2000));
     }
 
     public static List<MealTo> filteredByCycles(List<Meal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
@@ -48,8 +49,13 @@ public class MealsUtil {
     }
 
     public static List<MealTo> filteredByStreams(List<Meal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
-        // TODO Implement by streams
-        return null;
+        final Map<LocalDate, Integer> caloriesSumByDate = meals.stream()
+                .collect(Collectors.toMap(meal -> meal.getDateTime().toLocalDate(), Meal::getCalories, Integer::sum));
+
+        return meals.stream()
+                .filter(meal -> TimeUtil.isBetweenHalfOpen(meal.getDateTime().toLocalTime(), startTime, endTime))
+                .map(meal -> createTo(meal, caloriesSumByDate.get(meal.getDateTime().toLocalDate()) > caloriesPerDay))
+                .collect(Collectors.toList());
     }
 
     private static MealTo createTo(Meal meal, boolean excess) {
